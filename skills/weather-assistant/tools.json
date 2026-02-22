@@ -1,0 +1,74 @@
+{
+  "tools": [
+    {
+      "name": "get_current_weather",
+      "description": "Get current weather conditions for a specified location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The location to get weather for (city name or coordinates)"
+          }
+        },
+        "required": ["location"]
+      }
+    },
+    {
+      "name": "get_forecast",
+      "description": "Get weather forecast for a location for the specified number of days",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The location to get forecast for"
+          },
+          "days": {
+            "type": "integer",
+            "description": "Number of days to forecast (default is 7)",
+            "minimum": 1,
+            "maximum": 14
+          }
+        },
+        "required": ["location"]
+      }
+    },
+    {
+      "name": "get_weather_alerts",
+      "description": "Get any weather alerts for a specified location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The location to check for weather alerts"
+          }
+        },
+        "required": ["location"]
+      }
+    },
+    {
+      "name": "convert_temperature",
+      "description": "Convert temperature between Celsius and Fahrenheit",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The temperature value to convert"
+          },
+          "from_unit": {
+            "type": "string",
+            "description": "The unit to convert from ('celsius' or 'fahrenheit')"
+          },
+          "to_unit": {
+            "type": "string",
+            "description": "The unit to convert to ('celsius' or 'fahrenheit')"
+          }
+        },
+        "required": ["value", "from_unit", "to_unit"]
+      }
+    }
+  ]
+}

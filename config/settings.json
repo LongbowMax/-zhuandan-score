@@ -1,0 +1,130 @@
+{
+  "version": "3.0",
+  "description": "支持邮件报告 + 多股票监控 + 全功能分析",
+  
+  "watchlist": [
+    {
+      "code": "600995",
+      "name": "南网储能",
+      "position_ratio": 0.70,
+      "cost_price": null,
+      "sector": "电力设备",
+      "alert_thresholds": {
+        "price_drop_pct": 5.0,
+        "single_day_drop_pct": 3.0
+      }
+    },
+    {
+      "code": "300021",
+      "name": "大禹节水",
+      "position_ratio": 0,
+      "cost_price": null,
+      "sector": "农林牧渔",
+      "alert_thresholds": {
+        "price_drop_pct": 5.0,
+        "single_day_drop_pct": 3.0
+      }
+    },
+    {
+      "code": "300818",
+      "name": "必得科技",
+      "position_ratio": 0,
+      "cost_price": null,
+      "sector": "机械设备",
+      "alert_thresholds": {
+        "price_drop_pct": 5.0,
+        "single_day_drop_pct": 3.0
+      }
+    },
+    {
+      "code": "600161",
+      "name": "天坛生物",
+      "position_ratio": 0,
+      "cost_price": null,
+      "sector": "医药生物",
+      "alert_thresholds": {
+        "price_drop_pct": 5.0,
+        "single_day_drop_pct": 3.0
+      }
+    },
+    {
+      "code": "300694",
+      "name": "美湖股份",
+      "position_ratio": 0,
+      "cost_price": null,
+      "sector": "机械设备",
+      "alert_thresholds": {
+        "price_drop_pct": 5.0,
+        "single_day_drop_pct": 3.0
+      }
+    }
+  ],
+  
+  "risk_thresholds": {
+    "profit_decline_pct": 20,
+    "revenue_decline_pct": 15,
+    "roe_min": 5,
+    "debt_ratio_max": 70
+  },
+  
+  "notification": {
+    "enabled": true,
+    "channels": ["console", "email"],
+    "wechat": {
+      "enabled": false,
+      "send_key": ""
+    },
+    "email": {
+      "enabled": true,
+      "recipients": ["longbow_max@163.com"],
+      "daily_report_time": "15:30",
+      "weekly_report_day": "Friday",
+      "weekly_report_time": "18:00"
+    }
+  },
+  
+  "macro_monitor": {
+    "enabled": true,
+    "alert_on_major_change": true,
+    "indicators": ["CPI", "PPI", "PMI", "money_supply"]
+  },
+  
+  "analysis": {
+    "fundamental": {
+      "enabled": true,
+      "check_express": true,
+      "check_forecast": true
+    },
+    "technical": {
+      "enabled": true,
+      "indicators": ["MA", "MACD", "RSI", "BOLL"]
+    },
+    "fund_flow": {
+      "enabled": true,
+      "track_main_force": true,
+      "track_northbound": true
+    },
+    "news": {
+      "enabled": true,
+      "keywords": ["重组", "并购", "解禁", "减持", "诉讼", "处罚", "政策", "订单"],
+      "max_news_per_stock": 5
+    },
+    "valuation": {
+      "enabled": true,
+      "compare_with_industry": true,
+      "pe_percentile_lookback_years": 5
+    }
+  },
+  
+  "report": {
+    "generate_charts": true,
+    "chart_days": 60,
+    "save_html": true,
+    "html_retention_days": 30
+  },
+  
+  "tushare": {
+    "token": null,
+    "token_env_var": "TUSHARE_TOKEN"
+  }
+}

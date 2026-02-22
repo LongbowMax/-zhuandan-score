@@ -1,0 +1,8 @@
+{
+  "api_key": "",
+  "default_location": "Beijing",
+  "temperature_unit": "celsius",
+  "forecast_days": 7,
+  "retry_attempts": 3,
+  "timeout_ms": 10000
+}

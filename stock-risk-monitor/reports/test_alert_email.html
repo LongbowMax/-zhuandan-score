@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票风险预警</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+               margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%); 
+                   color: white; padding: 25px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .stock-info { margin-top: 10px; font-size: 16px; opacity: 0.9; }
+        .content { padding: 25px; }
+        .section { margin-bottom: 25px; }
+        .section-title { font-size: 16px; font-weight: 600; color: #333; 
+                          border-left: 4px solid #dc3545; padding-left: 10px; margin-bottom: 15px; }
+        .summary-box { background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 20px; }
+        .summary-text { font-size: 15px; color: #333; line-height: 1.6; }
+        .risk-item { background: white; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; 
+                      margin-bottom: 10px; border-left: 4px solid #dc3545; }
+        .risk-item.medium { border-left-color: #ffc107; }
+        .risk-item.low { border-left-color: #17a2b8; }
+        .risk-type { font-weight: 600; color: #333; margin-bottom: 5px; }
+        .risk-desc { color: #666; font-size: 14px; line-height: 1.5; }
+        .risk-level { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; 
+                       font-weight: 500; margin-left: 8px; }
+        .risk-level.high { background: #ffe5e5; color: #dc3545; }
+        .risk-level.medium { background: #fff3e0; color: #f57c00; }
+        .risk-level.low { background: #e3f2fd; color: #1976d2; }
+        .data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .data-item { text-align: center; padding: 12px; background: #f8f9fa; border-radius: 6px; }
+        .data-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .data-value { font-size: 18px; font-weight: 600; color: #333; }
+        .data-value.up { color: #dc3545; }
+        .data-value.down { color: #28a745; }
+        .footer { background: #f8f9fa; padding: 15px 25px; text-align: center; color: #999; font-size: 12px; }
+        .timestamp { text-align: right; color: #999; font-size: 12px; margin-top: 20px; }
+        .no-risk { text-align: center; padding: 30px; color: #28a745; }
+        .no-risk-icon { font-size: 48px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> 股票风险预警</h1>
+            <div class="stock-info">南网储能 (600995) | 2026-02-21 09:35</div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <div class="section-title">评估摘要</div>
+                <div class="summary-box">
+                    <div class="summary-text">
+                        <strong>风险等级：</strong><span style="color: #dc3545; font-size: 18px;">
+                        HIGH</span><br>
+                        <strong>评估结论：</strong>发现高风险信号，建议减仓观望，等待企稳信号
+                    </div>
+                </div>
+            </div>
+            
+            
+        <div class="section">
+            <div class="section-title">行情数据</div>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">最新价</div>
+                    <div class="data-value down">9.85</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">涨跌幅</div>
+                    <div class="data-value down">-2.35%</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">成交量</div>
+                    <div class="data-value">12.5万手</div>
+                </div>
+            </div>
+        </div>
+        
+            
+            <div class="section">
+                <div class="section-title">风险详情 (2项)</div>
+                
+            <div class="risk-item high">
+                <div class="risk-type">
+                    股价跌破重要支撑位
+                    <span class="risk-level high">高风险</span>
+                </div>
+                <div class="risk-desc">股价跌破60日均线，技术面转弱</div>
+            </div>
+            
+
+            <div class="risk-item medium">
+                <div class="risk-type">
+                    成交量萎缩
+                    <span class="risk-level medium">中风险</span>
+                </div>
+                <div class="risk-desc">近5日成交量较前期下降30%，市场关注度降低</div>
+            </div>
+            
+            </div>
+            
+            <div class="timestamp">
+                报告生成时间：2026-02-21 09:35:41<br>
+                数据来源：Tushare Pro | 分析师：山鬼之锤 ⚒️🏔️
+            </div>
+        </div>
+        
+        <div class="footer">
+            本报告仅供参考，不构成投资建议。股市有风险，投资需谨慎。
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "smtp_server": "smtp.163.com",
+  "smtp_port": 465,
+  "use_ssl": true,
+  "sender_email": "longbow_max@163.com",
+  "sender_name": "山鬼之锤",
+  "default_recipient": "longbow_max@163.com"
+}
