@@ -1,0 +1,41 @@
+{
+  "tushare": {
+    "token": "df0ce58b3d6d4a8394ca7286a075cb627c9161bbe43f92d39a979bbf"
+  },
+  "watchlist": [
+    {
+      "code": "600995",
+      "name": "南网储能",
+      "position_ratio": 0.70,
+      "cost_price": 12.50,
+      "sector": "电力",
+      "alert_threshold": {
+        "price_drop_pct": -0.08,
+        "price_rise_pct": 0.15,
+        "volume_surge_ratio": 2.5
+      }
+    }
+  ],
+  "notification": {
+    "channels": ["console", "wechat"],
+    "wechat": {
+      "enabled": true,
+      "send_key": "SCT315855TI1I67L2VGVhDQ0xvqWNtFNiG",
+      "type": "serverchan"
+    }
+  },
+  "macro_monitor": {
+    "enabled": true,
+    "indicators": ["shibor", "cpi", "pmi", "usdcny"],
+    "alert_on_major_change": true
+  },
+  "policy_monitor": {
+    "enabled": true,
+    "sectors": ["电力", "储能", "新能源"],
+    "keywords": ["电价", "储能", "新能源", "电力改革"]
+  },
+  "risk_threshold": {
+    "high": 75,
+    "medium": 50
+  }
+}

@@ -9,7 +9,7 @@ from datetime import datetime
 class Notifier:
     """风险通知器"""
     
-    def __init__(self, config_path='../config/settings.json'):
+    def __init__(self, config_path='config/settings.json'):
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = json.load(f)
         

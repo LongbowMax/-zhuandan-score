@@ -9,12 +9,20 @@ import json
 import os
 
 class DataFetcher:
-    def __init__(self, config_path='../config/settings.json'):
+    def __init__(self, config_path='config/settings.json'):
         """初始化Tushare连接"""
-        with open(config_path, 'r', encoding='utf-8') as f:
+        # 获取模块所在目录，构建正确路径
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+        project_dir = os.path.dirname(module_dir)
+        full_config_path = os.path.join(project_dir, config_path)
+        
+        with open(full_config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        self.token = config['tushare_token']
+        self.token = config.get('tushare', {}).get('token', '')
+        if not self.token:
+            raise ValueError("Tushare Token 未配置，请在 config/settings.json 中设置 tushare.token")
+        
         ts.set_token(self.token)
         self.pro = ts.pro_api()
         self.config = config

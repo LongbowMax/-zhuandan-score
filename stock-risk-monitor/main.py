@@ -23,7 +23,7 @@ from datetime import datetime
 
 def load_config():
     """加载配置"""
-    config_path = os.path.join(os.path.dirname(__file__), '../config/settings.json')
+    config_path = os.path.join(os.path.dirname(__file__), 'config/settings.json')
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -183,13 +183,17 @@ def main():
     
     # 初始化
     try:
-        fetcher = DataFetcher()
+        config_file = os.path.join(os.path.dirname(__file__), 'config/settings.json')
+        fetcher = DataFetcher(config_path=config_file)
         print("[数据] 接口连接成功")
     except Exception as e:
         print(f"[错误] 数据接口连接失败: {e}")
         return
     
-    notifier = Notifier()
+    # 获取配置文件路径
+    config_file = os.path.join(os.path.dirname(__file__), 'config/settings.json')
+    
+    notifier = Notifier(config_path=config_file)
     
     # 获取监控列表
     watchlist = config.get('watchlist', [])
