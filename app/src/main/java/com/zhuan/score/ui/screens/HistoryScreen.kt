@@ -223,10 +223,16 @@ private fun RoundCard(
                 ) {
                     // 倍数标识
                     if (round.getMultiplier() > 1) {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.error
+                        Surface(
+                            color = MaterialTheme.colorScheme.error,
+                            shape = MaterialTheme.shapes.small
                         ) {
-                            Text("×${round.getMultiplier()}")
+                            Text(
+                                text = "×${round.getMultiplier()}",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onError,
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
                     
