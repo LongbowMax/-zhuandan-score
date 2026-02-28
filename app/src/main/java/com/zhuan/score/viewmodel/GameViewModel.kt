@@ -11,6 +11,8 @@ import com.zhuan.score.model.GameRank
 import com.zhuan.score.model.GameRound
 import com.zhuan.score.model.Player
 import com.zhuan.score.model.PlayerResult
+import com.zhuan.score.model.PlayerSettlement
+import com.zhuan.score.model.SettlementSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +38,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // 当前游戏设置
     private val _currentRoundSettings = MutableStateFlow(RoundSettings())
     val currentRoundSettings: StateFlow<RoundSettings> = _currentRoundSettings.asStateFlow()
+    
+    // 结算设置
+    private val _settlementSettings = MutableStateFlow(SettlementSettings())
+    val settlementSettings: StateFlow<SettlementSettings> = _settlementSettings.asStateFlow()
     
     // 错误信息
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -313,6 +319,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    /**
+     * 计算结算
+     */
+    fun calculateSettlement(rate: Int = 100): List<PlayerSettlement> {
+        val sortedPlayers = _players.sortedByDescending { it.totalScore }
+        return sortedPlayers.mapIndexed { index, player ->
+            PlayerSettlement(
+                playerId = player.id,
+                playerName = player.name,
+                totalScore = player.totalScore,
+                amount = player.totalScore * rate,
+                isTop = index == 0
+            )
+        }
+    }
+    
+    /**
+     * 更新结算分值
+     */
+    fun updateSettlementRate(rate: Int) {
+        _settlementSettings.value = _settlementSettings.value.copy(scoreValue = rate)
+    }
+
     /**
      * 重置所有数据
      */
