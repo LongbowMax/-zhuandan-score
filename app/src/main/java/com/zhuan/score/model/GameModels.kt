@@ -110,3 +110,21 @@ data class Family(
         return playerIds.contains(playerId)
     }
 }
+
+/**
+ * 结算设置
+ */
+data class SettlementSettings(
+    val scoreValue: Int = 100  // 1分对应的金额（元）
+)
+
+/**
+ * 玩家结算结果
+ */
+data class PlayerSettlement(
+    val playerId: String,
+    val playerName: String,
+    val totalScore: Int,
+    val amount: Int,  // 正数为应收，负数为应付
+    val isTop: Boolean = false  // 是否为第一名
+)
