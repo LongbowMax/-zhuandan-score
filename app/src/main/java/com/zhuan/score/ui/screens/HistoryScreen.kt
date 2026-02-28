@@ -133,8 +133,8 @@ private fun SettlementDialog(
     viewModel: GameViewModel,
     onDismiss: () -> Unit
 ) {
-    val settlementSettings by viewModel.settlementSettings.collectAsState()
-    var rateText by remember { mutableStateOf(settlementSettings.scoreValue.toString()) }
+    val settlementSettings = viewModel.settlementSettings.collectAsState()
+    var rateText by remember { mutableStateOf(settlementSettings.value.scoreValue.toString()) }
     
     val settlements = remember(rateText) {
         val rate = rateText.toIntOrNull() ?: 100
