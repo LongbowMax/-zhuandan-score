@@ -3,6 +3,7 @@ package com.zhuan.score.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,9 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zhuan.score.model.GameRound
+import com.zhuan.score.model.PlayerSettlement
 import com.zhuan.score.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -24,6 +27,7 @@ fun HistoryScreen(
     onNavigateBack: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf<String?>(null) }
+    var showSettlementDialog by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -32,6 +36,13 @@ fun HistoryScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    if (viewModel.rounds.isNotEmpty()) {
+                        IconButton(onClick = { showSettlementDialog = true }) {
+                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = "结算")
+                        }
                     }
                 }
             )
@@ -104,6 +115,113 @@ fun HistoryScreen(
                 TextButton(onClick = { showDeleteDialog = null }) {
                     Text("取消")
                 }
+            }
+        )
+    }
+    
+    // 结算对话框
+    if (showSettlementDialog) {
+        SettlementDialog(
+            viewModel = viewModel,
+            onDismiss = { showSettlementDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun SettlementDialog(
+    viewModel: GameViewModel,
+    onDismiss: () -> Unit
+) {
+    val settlementSettings by viewModel.settlementSettings.collectAsState()
+    var rateText by remember { mutableStateOf(settlementSettings.scoreValue.toString()) }
+    
+    val settlements = remember(rateText) {
+        val rate = rateText.toIntOrNull() ?: 100
+        viewModel.calculateSettlement(rate)
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("结算") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = rateText,
+                    onValueChange = { value: String ->
+                        rateText = value.filter { c: Char -> c.isDigit() }
+                    },
+                    label = { Text("1分 = ?元") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "结算结果",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                settlements.forEachIndexed { index, settlement ->
+                    SettlementItem(settlement = settlement, isTop = index == 0)
+                    if (index < settlements.size - 1) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SettlementItem(
+    settlement: PlayerSettlement,
+    isTop: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = if (isTop) "🏆" else "•",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            
+            Text(
+                text = settlement.playerName,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            
+            Text(
+                text = "(${settlement.totalScore}分)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        val amountText = if (settlement.amount >= 0) "+${settlement.amount}" else "${settlement.amount}"
+        Text(
+            text = "${amountText}元",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = when {
+                settlement.amount > 0 -> MaterialTheme.colorScheme.error
+                settlement.amount < 0 -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurface
             }
         )
     }
