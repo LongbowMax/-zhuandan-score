@@ -161,14 +161,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         val shuffled = _players.shuffled()
-        val family1Id = UUID.randomUUID().toString()
-        val family2Id = UUID.randomUUID().toString()
         
         val newFamilies = mutableMapOf<String, String>()
-        newFamilies[shuffled[0].id] = family1Id
-        newFamilies[shuffled[1].id] = family1Id
-        newFamilies[shuffled[2].id] = family2Id
-        newFamilies[shuffled[3].id] = family2Id
+        newFamilies[shuffled[0].id] = "family1"
+        newFamilies[shuffled[1].id] = "family1"
+        newFamilies[shuffled[2].id] = "family2"
+        newFamilies[shuffled[3].id] = "family2"
         
         _currentRoundSettings.value = _currentRoundSettings.value.copy(families = newFamilies)
     }

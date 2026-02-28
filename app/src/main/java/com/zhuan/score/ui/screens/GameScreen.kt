@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zhuan.score.model.GameRank
 import com.zhuan.score.viewmodel.GameViewModel
-import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,6 +143,10 @@ private fun RankSection(viewModel: GameViewModel) {
 private fun FamilySection(viewModel: GameViewModel) {
     val settings by viewModel.currentRoundSettings.collectAsState()
     
+    // 统计家族1的成员数量
+    val family1Count = settings.families.values.count { it == "family1" }
+    val family1Members = settings.families.filter { it.value == "family1" }.keys
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -171,12 +174,54 @@ private fun FamilySection(viewModel: GameViewModel) {
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            // 提示文字
+            Text(
+                text = "请选择家族1的2名成员，其余自动归为家族2",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
             
-            // 获取所有家族ID
-            val familyIds = settings.families.values.toSet().toList()
+            // 显示家族分配情况
+            if (family1Count == 2) {
+                val family1Names = viewModel.players
+                    .filter { family1Members.contains(it.id) }
+                    .joinToString("、") { it.name }
+                val family2Names = viewModel.players
+                    .filter { !family1Members.contains(it.id) }
+                    .joinToString("、") { it.name }
+                
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("家族1: $family1Names", style = MaterialTheme.typography.bodyMedium)
+                        Text("家族2: $family2Names", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            } else {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "已选择 $family1Count/2 人，需要再选择 ${2 - family1Count} 人",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
             
+            // 玩家选择
             viewModel.players.forEach { player ->
+                val isFamily1 = settings.families[player.id] == "family1"
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -187,44 +232,22 @@ private fun FamilySection(viewModel: GameViewModel) {
                         modifier = Modifier.weight(1f)
                     )
                     
-                    var expanded by remember { mutableStateOf(false) }
-                    Box {
-                        OutlinedButton(
-                            onClick = { expanded = true }
-                        ) {
-                            val currentFamily = settings.families[player.id]
-                            val displayText = when {
-                                currentFamily == null -> "选择家族"
-                                familyIds.indexOf(currentFamily) == 0 -> "家族1"
-                                familyIds.indexOf(currentFamily) == 1 -> "家族2"
-                                else -> "新家族"
-                            }
-                            Text(displayText)
-                        }
-                        
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            // 现有家族
-                            familyIds.forEachIndexed { index, familyId ->
-                                DropdownMenuItem(
-                                    text = { Text("家族${index + 1}") },
-                                    onClick = {
-                                        viewModel.setPlayerFamily(player.id, familyId)
-                                        expanded = false
-                                    }
-                                )
-                            }
-                            // 新家族选项
-                            DropdownMenuItem(
-                                text = { Text("+ 新家族") },
-                                onClick = {
-                                    viewModel.setPlayerFamily(player.id, UUID.randomUUID().toString())
-                                    expanded = false
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("家族1", style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = isFamily1,
+                            onCheckedChange = { checked ->
+                                if (checked && family1Count < 2) {
+                                    viewModel.setPlayerFamily(player.id, "family1")
+                                } else if (!checked && isFamily1) {
+                                    viewModel.setPlayerFamily(player.id, "family2")
                                 }
-                            )
-                        }
+                            },
+                            enabled = !isFamily1 && family1Count < 2 || isFamily1
+                        )
                     }
                 }
                 
