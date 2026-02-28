@@ -27,20 +27,15 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    - name: Clean and Build Debug APK
+      run: |
+        ./gradlew clean assembleDebug
+        ls -la app/build/outputs/apk/debug/
       
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: app-debug
-        path: app/build/outputs/apk/debug/*.apk
-        
-    - name: Build Release APK
-      run: ./gradlew assembleRelease
-      
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release
-        path: app/build/outputs/apk/release/*.apk
+        path: app/build/outputs/apk/debug/app-debug.apk
+        if-no-files-found: error
