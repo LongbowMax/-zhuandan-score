@@ -120,8 +120,10 @@ private fun PlayerSelectionSection(
     onConfirm: () -> Unit
 ) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    // 直接从 settings 获取选择数量，避免延迟
-    val selectedCount = settings.selectedPlayerIds.size
+    // 使用 derivedStateOf 确保计数及时更新
+    val selectedCount by remember(settings.selectedPlayerIds) {
+        derivedStateOf { settings.selectedPlayerIds.size }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
