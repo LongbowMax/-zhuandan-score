@@ -180,7 +180,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun getSelectedPlayers(): List<Player> {
         val selectedIds = _currentRoundSettings.value.selectedPlayerIds
-        return _players.filter { selectedIds.contains(it.id) }
+        // 如果手动选择了玩家，返回选中的
+        if (selectedIds.isNotEmpty()) {
+            return _players.filter { selectedIds.contains(it.id) }
+        }
+        // 如果没有选择且总人数为4，自动返回所有玩家
+        if (_players.size == 4) {
+            return _players.toList()
+        }
+        return emptyList()
     }
 
     /**
