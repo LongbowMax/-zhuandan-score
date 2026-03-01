@@ -27,15 +27,29 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Clean and Build Debug APK
+    - name: Build Release APK
+      run: |
+        ./gradlew clean assembleRelease
+        ls -la app/build/outputs/apk/release/
+      
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: 转蛋计分助手-Release
+        path: app/build/outputs/apk/release/app-release-unsigned.apk
+        if-no-files-found: error
+        
+    - name: Build Debug APK (备用)
+      if: failure()
       run: |
         ./gradlew clean assembleDebug
         ls -la app/build/outputs/apk/debug/
       
-    - name: Upload Debug APK
+    - name: Upload Debug APK (备用)
       uses: actions/upload-artifact@v4
-      if: success()
+      if: failure()
       with:
-        name: app-debug
+        name: 转蛋计分助手-Debug
         path: app/build/outputs/apk/debug/app-debug.apk
         if-no-files-found: error
