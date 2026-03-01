@@ -120,7 +120,8 @@ private fun PlayerSelectionSection(
     onConfirm: () -> Unit
 ) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    val selectedCount = selectedPlayers.size
+    // 直接从 settings 获取选择数量，避免延迟
+    val selectedCount = settings.selectedPlayerIds.size
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -230,6 +231,9 @@ private fun PlayerSelectionSection(
 @Composable
 private fun RankSection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
     val settings by viewModel.currentRoundSettings.collectAsState()
+    
+    // 获取已被其他玩家选中的排名
+    val usedRanks = settings.rankings.values.toSet()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -247,6 +251,9 @@ private fun RankSection(viewModel: GameViewModel, selectedPlayers: List<Player>)
             Spacer(modifier = Modifier.height(12.dp))
 
             selectedPlayers.forEach { player ->
+                // 当前玩家已选的排名
+                val currentPlayerRank = settings.rankings[player.id]
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -262,8 +269,7 @@ private fun RankSection(viewModel: GameViewModel, selectedPlayers: List<Player>)
                         OutlinedButton(
                             onClick = { expanded = true }
                         ) {
-                            val currentRank = settings.rankings[player.id]
-                            Text(currentRank?.displayName ?: "选择排名")
+                            Text(currentPlayerRank?.displayName ?: "选择排名")
                         }
 
                         DropdownMenu(
@@ -271,12 +277,26 @@ private fun RankSection(viewModel: GameViewModel, selectedPlayers: List<Player>)
                             onDismissRequest = { expanded = false }
                         ) {
                             GameRank.values().forEach { rank ->
+                                // 判断是否可用：未被其他玩家选择，或者是当前玩家已选的
+                                val isAvailable = rank !in usedRanks || rank == currentPlayerRank
+                                
                                 DropdownMenuItem(
-                                    text = { Text(rank.displayName) },
+                                    text = { 
+                                        Text(
+                                            rank.displayName,
+                                            color = if (isAvailable) 
+                                                MaterialTheme.colorScheme.onSurface 
+                                            else 
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        ) 
+                                    },
                                     onClick = {
-                                        viewModel.setPlayerRank(player.id, rank)
-                                        expanded = false
-                                    }
+                                        if (isAvailable) {
+                                            viewModel.setPlayerRank(player.id, rank)
+                                            expanded = false
+                                        }
+                                    },
+                                    enabled = isAvailable
                                 )
                             }
                         }
