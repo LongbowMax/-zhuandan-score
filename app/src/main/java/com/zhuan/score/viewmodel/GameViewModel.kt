@@ -124,8 +124,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val currentSettings = _currentRoundSettings.value
         val selectedPlayers = getSelectedPlayers()
         
-        // 设置当前玩家排名
+        // 检查该排名是否已被其他玩家使用，如果是则先清除
         val newRankings = currentSettings.rankings.toMutableMap()
+        currentSettings.rankings.forEach { (pid, r) ->
+            if (pid != playerId && r == rank) {
+                newRankings.remove(pid)
+            }
+        }
+        
+        // 设置当前玩家排名
         newRankings[playerId] = rank
         
         // 如果已经设置了3个不同排名，自动为剩余玩家分配最后一个排名
