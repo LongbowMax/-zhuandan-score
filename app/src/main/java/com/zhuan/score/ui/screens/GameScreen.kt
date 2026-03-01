@@ -25,7 +25,14 @@ fun GameScreen(
 ) {
     val settings by viewModel.currentRoundSettings.collectAsState()
     val selectedPlayers = viewModel.getSelectedPlayers()
-    val isSelectionComplete = selectedPlayers.size == 4 || viewModel.players.size == 4
+    
+    // 确认选择状态（当玩家>4人时需要手动确认）
+    var isSelectionConfirmed by remember { mutableStateOf(false) }
+    
+    // 是否需要显示玩家选择（玩家>4人且未确认）
+    val showPlayerSelection = viewModel.players.size > 4 && !isSelectionConfirmed
+    // 是否显示后续设置（玩家<=4人 或 已确认选择）
+    val showGameSettings = viewModel.players.size <= 4 || isSelectionConfirmed
 
     Scaffold(
         topBar = {
@@ -52,33 +59,37 @@ fun GameScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 玩家选择（当总人数超过4人时显示）
-            if (viewModel.players.size > 4) {
-                PlayerSelectionSection(viewModel, selectedPlayers)
+            // 玩家选择（当总人数超过4人且未确认时显示）
+            if (showPlayerSelection) {
+                PlayerSelectionSection(
+                    viewModel = viewModel,
+                    selectedPlayers = selectedPlayers,
+                    onConfirm = { isSelectionConfirmed = true }
+                )
             }
 
             // 排名设置
-            if (isSelectionComplete) {
+            if (showGameSettings) {
                 RankSection(viewModel, selectedPlayers)
             }
 
             // 家族设置
-            if (isSelectionComplete) {
+            if (showGameSettings) {
                 FamilySection(viewModel, selectedPlayers)
             }
 
             // 炸和天王炸设置
-            if (isSelectionComplete) {
+            if (showGameSettings) {
                 ExplosionSection(viewModel)
             }
 
             // 预览得分
-            if (isSelectionComplete) {
+            if (showGameSettings) {
                 PreviewSection(viewModel, selectedPlayers)
             }
 
             // 提交按钮
-            if (isSelectionComplete) {
+            if (showGameSettings) {
                 val rankingsForSelected = settings.rankings.filterKeys { id ->
                     selectedPlayers.any { it.id == id }
                 }
@@ -103,7 +114,11 @@ fun GameScreen(
 }
 
 @Composable
-private fun PlayerSelectionSection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
+private fun PlayerSelectionSection(
+    viewModel: GameViewModel,
+    selectedPlayers: List<Player>,
+    onConfirm: () -> Unit
+) {
     val settings by viewModel.currentRoundSettings.collectAsState()
     val selectedCount = selectedPlayers.size
 
@@ -111,10 +126,7 @@ private fun PlayerSelectionSection(viewModel: GameViewModel, selectedPlayers: Li
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (selectedCount == 4)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -186,34 +198,29 @@ private fun PlayerSelectionSection(viewModel: GameViewModel, selectedPlayers: Li
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // 确认选择提示（当选择4人时显示）
+            // 确认按钮（选满4人后显示）
             if (selectedCount == 4) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
+                Button(
+                    onClick = onConfirm,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "已选择4人，请继续设置排名和家族",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("确认选择")
+                }
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false
+                ) {
+                    Text("请继续选择玩家 ($selectedCount/4)")
                 }
             }
         }
