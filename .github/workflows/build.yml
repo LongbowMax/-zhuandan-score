@@ -63,7 +63,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: steps.check_keystore.outputs.has_keystore == 'true'
       with:
-        name: 转蛋计分助手-v1.0.0-已签名
+        name: ZhuandanScore-v1.0.0-signed
         path: app/build/outputs/apk/release/app-release.apk
         if-no-files-found: error
         
@@ -77,6 +77,6 @@ jobs:
       uses: actions/upload-artifact@v4
       if: steps.check_keystore.outputs.has_keystore == 'false'
       with:
-        name: 转蛋计分助手-v1.0.0-调试版
+        name: ZhuandanScore-v1.0.0-debug
         path: app/build/outputs/apk/debug/app-debug.apk
         if-no-files-found: error
