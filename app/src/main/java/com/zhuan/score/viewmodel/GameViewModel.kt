@@ -20,37 +20,37 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
-    
+
     private val dataStore = GameDataStore(application)
-    
+
     // 玩家列表
     private val _players = mutableStateListOf<Player>()
     val players: List<Player> get() = _players
-    
+
     // 游戏记录
     private val _rounds = mutableStateListOf<GameRound>()
     val rounds: List<GameRound> get() = _rounds
-    
+
     // 当前编辑的玩家名
     var newPlayerName = mutableStateOf("")
         private set
-    
+
     // 当前游戏设置
     private val _currentRoundSettings = MutableStateFlow(RoundSettings())
     val currentRoundSettings: StateFlow<RoundSettings> = _currentRoundSettings.asStateFlow()
-    
+
     // 结算设置
     private val _settlementSettings = MutableStateFlow(SettlementSettings())
     val settlementSettings: StateFlow<SettlementSettings> = _settlementSettings.asStateFlow()
-    
+
     // 错误信息
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-    
+
     init {
         loadData()
     }
-    
+
     private fun loadData() {
         viewModelScope.launch {
             dataStore.playersFlow.collect { loadedPlayers ->
@@ -65,7 +65,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    
+
     /**
      * 添加玩家
      */
@@ -83,16 +83,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _errorMessage.value = "最多支持10个玩家"
             return
         }
-        
+
         val newPlayer = Player(name = name)
         _players.add(newPlayer)
         newPlayerName.value = ""
-        
+
         viewModelScope.launch {
             dataStore.savePlayers(_players.toList())
         }
     }
-    
+
     /**
      * 删除玩家
      */
@@ -102,21 +102,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             dataStore.savePlayers(_players.toList())
         }
     }
-    
+
     /**
      * 更新玩家名
      */
     fun updateNewPlayerName(name: String) {
         newPlayerName.value = name
     }
-    
+
     /**
      * 清除错误信息
      */
     fun clearError() {
         _errorMessage.value = null
     }
-    
+
     /**
      * 设置玩家排名
      */
@@ -126,7 +126,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         newRankings[playerId] = rank
         _currentRoundSettings.value = currentSettings.copy(rankings = newRankings)
     }
-    
+
     /**
      * 设置玩家家族
      */
@@ -136,73 +136,117 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         newFamilies[playerId] = familyId
         _currentRoundSettings.value = currentSettings.copy(families = newFamilies)
     }
-    
+
+    /**
+     * 切换玩家选择（用于选择本局上台的4人）
+     */
+    fun togglePlayerSelection(playerId: String) {
+        val currentSettings = _currentRoundSettings.value
+        val current = currentSettings.selectedPlayerIds.toMutableList()
+        if (current.contains(playerId)) {
+            // 取消选择时，同时清除该玩家的排名和家族
+            current.remove(playerId)
+            val newRankings = currentSettings.rankings.toMutableMap()
+            val newFamilies = currentSettings.families.toMutableMap()
+            newRankings.remove(playerId)
+            newFamilies.remove(playerId)
+            _currentRoundSettings.value = currentSettings.copy(
+                selectedPlayerIds = current,
+                rankings = newRankings,
+                families = newFamilies
+            )
+        } else if (current.size < 4) {
+            current.add(playerId)
+            _currentRoundSettings.value = currentSettings.copy(selectedPlayerIds = current)
+        }
+    }
+
     /**
      * 设置炸的数量
      */
     fun setExplosionCount(count: Int) {
         _currentRoundSettings.value = _currentRoundSettings.value.copy(explosionCount = count)
     }
-    
+
     /**
      * 设置是否有天王炸
      */
     fun setTianWangZha(has: Boolean) {
         _currentRoundSettings.value = _currentRoundSettings.value.copy(hasTianWangZha = has)
     }
-    
+
     /**
-     * 自动分配家族（随机配对）
+     * 获取本局选中的玩家列表
+     */
+    fun getSelectedPlayers(): List<Player> {
+        val selectedIds = _currentRoundSettings.value.selectedPlayerIds
+        return _players.filter { selectedIds.contains(it.id) }
+    }
+
+    /**
+     * 自动分配家族（随机配对）- 只针对选中的玩家
      */
     fun autoAssignFamilies() {
-        if (_players.size != 4) {
-            _errorMessage.value = "自动分配需要恰好4个玩家"
+        val selectedPlayers = getSelectedPlayers()
+        if (selectedPlayers.size != 4) {
+            _errorMessage.value = "自动分配需要恰好选择4个玩家"
             return
         }
-        
-        val shuffled = _players.shuffled()
-        
-        val newFamilies = mutableMapOf<String, String>()
+
+        val shuffled = selectedPlayers.shuffled()
+
+        val newFamilies = _currentRoundSettings.value.families.toMutableMap()
+        // 清除之前选中玩家的家族分配
+        selectedPlayers.forEach { newFamilies.remove(it.id) }
+        // 重新分配
         newFamilies[shuffled[0].id] = "family1"
         newFamilies[shuffled[1].id] = "family1"
         newFamilies[shuffled[2].id] = "family2"
         newFamilies[shuffled[3].id] = "family2"
-        
-        _currentRoundSettings.value = _currentRoundSettings.value.copy(families = newFamilies)
+
+        _currentRoundSettings.value = _currentRoundSettings.value.copy(families = newFamilies.toMap())
     }
-    
+
     /**
      * 计算并保存本局游戏
      */
     fun calculateAndSaveRound() {
         val settings = _currentRoundSettings.value
-        
-        // 验证数据
-        if (settings.rankings.size != _players.size) {
-            _errorMessage.value = "请为所有玩家设置排名"
+        val selectedPlayers = getSelectedPlayers()
+
+        // 验证数据 - 只针对选中的玩家
+        if (selectedPlayers.size != 4) {
+            _errorMessage.value = "请选择4个玩家进行游戏"
             return
         }
-        if (settings.families.size != _players.size) {
-            _errorMessage.value = "请为所有玩家设置家族"
+        if (settings.rankings.size != 4) {
+            _errorMessage.value = "请为所有选中的玩家设置排名"
             return
         }
-        
-        // 检查是否每个排名都有且只有一个玩家
-        val rankCounts = settings.rankings.values.groupingBy { it }.eachCount()
+        if (settings.families.size != 4) {
+            _errorMessage.value = "请为所有选中的玩家设置家族"
+            return
+        }
+
+        // 检查是否每个排名都有且只有一个玩家（只检查选中玩家）
+        val selectedPlayerIds = selectedPlayers.map { it.id }.toSet()
+        val selectedRankings = settings.rankings.filterKeys { selectedPlayerIds.contains(it) }
+        val rankCounts = selectedRankings.values.groupingBy { it }.eachCount()
         if (rankCounts.size != 4 || rankCounts.values.any { it != 1 }) {
             _errorMessage.value = "每个排名只能有一个玩家"
             return
         }
-        
-        // 检查是否每个家族恰好有2人
-        val familyCounts = settings.families.values.groupingBy { it }.eachCount()
+
+        // 检查是否每个家族恰好有2人（只检查选中玩家）
+        val selectedFamilies = settings.families.filterKeys { selectedPlayerIds.contains(it) }
+        val familyCounts = selectedFamilies.values.groupingBy { it }.eachCount()
         if (familyCounts.size != 2 || familyCounts.values.any { it != 2 }) {
             _errorMessage.value = "每个家族必须有2人"
             return
         }
-        
-        // 创建玩家结果
-        val playerResults = _players.map { player ->
+
+        // 创建玩家结果 - 只包含选中的玩家
+        val playerResults = selectedPlayers.map { player ->
             val rank = settings.rankings[player.id]!!
             val familyId = settings.families[player.id]!!
             PlayerResult(
@@ -213,38 +257,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 score = 0  // 临时，稍后计算
             )
         }
-        
+
         // 创建游戏记录
         val round = GameRound(
             playerResults = playerResults,
             explosionCount = settings.explosionCount,
             hasTianWangZha = settings.hasTianWangZha
         )
-        
+
         // 计算得分
         val actualScore = round.getActualScore()
         val familyScores = calculateFamilyScores(round, actualScore)
-        
+
         // 更新玩家结果中的分数
         val finalResults = playerResults.map { result ->
             result.copy(score = familyScores[result.familyId] ?: 0)
         }
-        
+
         val finalRound = round.copy(playerResults = finalResults)
-        
+
         // 保存游戏记录
         _rounds.add(0, finalRound)
         viewModelScope.launch {
             dataStore.saveRounds(_rounds.toList())
         }
-        
+
         // 更新玩家总分
         updatePlayerScores(finalResults)
-        
+
         // 重置当前设置
         _currentRoundSettings.value = RoundSettings()
     }
-    
+
     /**
      * 计算每个家族的得分
      */
@@ -252,7 +296,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val sortedResults = round.playerResults.sortedBy { it.rank.rank }
         val firstFamily = sortedResults[0].familyId
         val secondFamily = sortedResults[1].familyId
-        
+
         return if (firstFamily == secondFamily) {
             // 头游和二游同一家，赢
             mapOf(
@@ -273,7 +317,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
-    
+
     /**
      * 更新玩家总分
      */
@@ -291,7 +335,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             dataStore.savePlayers(_players.toList())
         }
     }
-    
+
     /**
      * 删除游戏记录
      */
@@ -309,14 +353,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             _rounds.removeAll { r -> r.id == roundId }
-            
+
             viewModelScope.launch {
                 dataStore.saveRounds(_rounds.toList())
                 dataStore.savePlayers(_players.toList())
             }
         }
     }
-    
+
     /**
      * 计算结算
      */
@@ -332,7 +376,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
-    
+
     /**
      * 更新结算分值
      */
@@ -356,6 +400,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
  * 单局游戏设置数据类
  */
 data class RoundSettings(
+    val selectedPlayerIds: List<String> = emptyList(),  // 新增：本局选中的玩家
     val rankings: Map<String, GameRank> = emptyMap(),  // playerId -> rank
     val families: Map<String, String> = emptyMap(),    // playerId -> familyId
     val explosionCount: Int = 0,

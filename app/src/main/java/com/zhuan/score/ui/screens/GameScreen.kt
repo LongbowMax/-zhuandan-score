@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zhuan.score.model.GameRank
+import com.zhuan.score.model.Player
 import com.zhuan.score.viewmodel.GameViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,7 +24,9 @@ fun GameScreen(
     onNavigateToHistory: () -> Unit
 ) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    
+    val selectedPlayers = viewModel.getSelectedPlayers()
+    val isSelectionComplete = selectedPlayers.size == 4 || viewModel.players.size == 4
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,38 +52,148 @@ fun GameScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 玩家选择（当总人数超过4人时显示）
+            if (viewModel.players.size > 4) {
+                PlayerSelectionSection(viewModel, selectedPlayers)
+            }
+
             // 排名设置
-            RankSection(viewModel)
-            
+            if (isSelectionComplete) {
+                RankSection(viewModel, selectedPlayers)
+            }
+
             // 家族设置
-            FamilySection(viewModel)
-            
+            if (isSelectionComplete) {
+                FamilySection(viewModel, selectedPlayers)
+            }
+
             // 炸和天王炸设置
-            ExplosionSection(viewModel)
-            
+            if (isSelectionComplete) {
+                ExplosionSection(viewModel)
+            }
+
             // 预览得分
-            PreviewSection(viewModel)
-            
+            if (isSelectionComplete) {
+                PreviewSection(viewModel, selectedPlayers)
+            }
+
             // 提交按钮
-            Button(
-                onClick = {
-                    viewModel.calculateAndSaveRound()
-                    onNavigateToHistory()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = settings.rankings.size == viewModel.players.size &&
-                         settings.families.size == viewModel.players.size
-            ) {
-                Text("计算并保存")
+            if (isSelectionComplete) {
+                val rankingsForSelected = settings.rankings.filterKeys { id ->
+                    selectedPlayers.any { it.id == id }
+                }
+                val familiesForSelected = settings.families.filterKeys { id ->
+                    selectedPlayers.any { it.id == id }
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.calculateAndSaveRound()
+                        onNavigateToHistory()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = rankingsForSelected.size == selectedPlayers.size &&
+                             familiesForSelected.size == selectedPlayers.size &&
+                             selectedPlayers.size == 4
+                ) {
+                    Text("计算并保存")
+                }
             }
         }
     }
 }
 
 @Composable
-private fun RankSection(viewModel: GameViewModel) {
+private fun PlayerSelectionSection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    
+    val selectedCount = selectedPlayers.size
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selectedCount == 4)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "选择本局玩家",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // 显示已选择数量
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedCount == 4)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = "$selectedCount/4",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        color = if (selectedCount == 4)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onErrorContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Text(
+                text = "请勾选4个玩家参与本局游戏",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+
+            // 玩家选择列表
+            viewModel.players.forEach { player ->
+                val isSelected = settings.selectedPlayerIds.contains(player.id)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = player.name,
+                        modifier = Modifier.weight(1f),
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            viewModel.togglePlayerSelection(player.id)
+                        },
+                        enabled = isSelected || selectedCount < 4
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RankSection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
+    val settings by viewModel.currentRoundSettings.collectAsState()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -93,10 +206,10 @@ private fun RankSection(viewModel: GameViewModel) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
-            viewModel.players.forEach { player ->
+
+            selectedPlayers.forEach { player ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -106,7 +219,7 @@ private fun RankSection(viewModel: GameViewModel) {
                         text = player.name,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     var expanded by remember { mutableStateOf(false) }
                     Box {
                         OutlinedButton(
@@ -115,7 +228,7 @@ private fun RankSection(viewModel: GameViewModel) {
                             val currentRank = settings.rankings[player.id]
                             Text(currentRank?.displayName ?: "选择排名")
                         }
-                        
+
                         DropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
@@ -132,7 +245,7 @@ private fun RankSection(viewModel: GameViewModel) {
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -140,13 +253,14 @@ private fun RankSection(viewModel: GameViewModel) {
 }
 
 @Composable
-private fun FamilySection(viewModel: GameViewModel) {
+private fun FamilySection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    
-    // 统计家族1的成员数量
-    val family1Count = settings.families.values.count { it == "family1" }
+
+    // 只统计选中玩家中家族1的成员数量
+    val selectedPlayerIds = selectedPlayers.map { it.id }.toSet()
+    val family1Count = settings.families.filterKeys { selectedPlayerIds.contains(it) }.values.count { it == "family1" }
     val family1Members = settings.families.filter { it.value == "family1" }.keys
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -164,8 +278,9 @@ private fun FamilySection(viewModel: GameViewModel) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                
-                if (viewModel.players.size == 4) {
+
+                // 自动分配按钮（当选中4人时显示）
+                if (selectedPlayers.size == 4) {
                     TextButton(
                         onClick = { viewModel.autoAssignFamilies() }
                     ) {
@@ -173,7 +288,7 @@ private fun FamilySection(viewModel: GameViewModel) {
                     }
                 }
             }
-            
+
             // 提示文字
             Text(
                 text = "请选择家族1的2名成员，其余自动归为家族2",
@@ -181,16 +296,16 @@ private fun FamilySection(viewModel: GameViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
             )
-            
+
             // 显示家族分配情况
             if (family1Count == 2) {
-                val family1Names = viewModel.players
+                val family1Names = selectedPlayers
                     .filter { family1Members.contains(it.id) }
                     .joinToString("、") { it.name }
-                val family2Names = viewModel.players
+                val family2Names = selectedPlayers
                     .filter { !family1Members.contains(it.id) }
                     .joinToString("、") { it.name }
-                
+
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -217,11 +332,11 @@ private fun FamilySection(viewModel: GameViewModel) {
                     )
                 }
             }
-            
-            // 玩家选择
-            viewModel.players.forEach { player ->
+
+            // 玩家选择（只显示选中的玩家）
+            selectedPlayers.forEach { player ->
                 val isFamily1 = settings.families[player.id] == "family1"
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -231,7 +346,7 @@ private fun FamilySection(viewModel: GameViewModel) {
                         text = player.name,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -250,7 +365,7 @@ private fun FamilySection(viewModel: GameViewModel) {
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -260,7 +375,7 @@ private fun FamilySection(viewModel: GameViewModel) {
 @Composable
 private fun ExplosionSection(viewModel: GameViewModel) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -273,9 +388,9 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // 炸的数量
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -283,13 +398,13 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("6张以上炸的数量")
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     IconButton(
-                        onClick = { 
+                        onClick = {
                             if (settings.explosionCount > 0) {
                                 viewModel.setExplosionCount(settings.explosionCount - 1)
                             }
@@ -298,12 +413,12 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                     ) {
                         Icon(Icons.Default.Remove, contentDescription = "减少")
                     }
-                    
+
                     Text(
                         text = settings.explosionCount.toString(),
                         style = MaterialTheme.typography.titleLarge
                     )
-                    
+
                     IconButton(
                         onClick = { viewModel.setExplosionCount(settings.explosionCount + 1) }
                     ) {
@@ -311,7 +426,7 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                     }
                 }
             }
-            
+
             if (settings.explosionCount > 0) {
                 Text(
                     text = "倍数: ${"×".repeat(settings.explosionCount + 1)}",
@@ -319,9 +434,9 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 天王炸
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -329,13 +444,13 @@ private fun ExplosionSection(viewModel: GameViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("是否有天王炸")
-                
+
                 Switch(
                     checked = settings.hasTianWangZha,
                     onCheckedChange = { viewModel.setTianWangZha(it) }
                 )
             }
-            
+
             if (settings.hasTianWangZha) {
                 Text(
                     text = "天王炸额外翻倍",
@@ -348,12 +463,12 @@ private fun ExplosionSection(viewModel: GameViewModel) {
 }
 
 @Composable
-private fun PreviewSection(viewModel: GameViewModel) {
+private fun PreviewSection(viewModel: GameViewModel, selectedPlayers: List<Player>) {
     val settings by viewModel.currentRoundSettings.collectAsState()
-    
+
     // 计算预览得分
     val multiplier = (1 shl settings.explosionCount) * (if (settings.hasTianWangZha) 2 else 1)
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -368,21 +483,25 @@ private fun PreviewSection(viewModel: GameViewModel) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 基础分
+            val selectedPlayerIds = selectedPlayers.map { it.id }.toSet()
+            val rankingsForSelected = settings.rankings.filterKeys { selectedPlayerIds.contains(it) }
+            val familiesForSelected = settings.families.filterKeys { selectedPlayerIds.contains(it) }
+
             val baseScore = when {
-                settings.rankings.size != viewModel.players.size -> "?"
-                settings.families.size != viewModel.players.size -> "?"
+                rankingsForSelected.size != selectedPlayers.size -> "?"
+                familiesForSelected.size != selectedPlayers.size -> "?"
                 else -> {
                     // 简化计算，实际需要完整数据
                     "根据排名计算"
                 }
             }
-            
+
             Text("基础分: 头游+二游=3分 / 头游+三游=2分 / 头游+末游=1分")
-            
+
             if (multiplier > 1) {
                 Text(
                     "总倍数: ×$multiplier",
