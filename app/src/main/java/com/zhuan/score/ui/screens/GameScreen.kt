@@ -82,9 +82,8 @@ fun GameScreen(
                 val rankingsForSelected = settings.rankings.filterKeys { id ->
                     selectedPlayers.any { it.id == id }
                 }
-                val familiesForSelected = settings.families.filterKeys { id ->
-                    selectedPlayers.any { it.id == id }
-                }
+                val selectedPlayerIds = selectedPlayers.map { it.id }.toSet()
+                val family1Count = settings.families.filterKeys { selectedPlayerIds.contains(it) }.values.count { it == "family1" }
 
                 Button(
                     onClick = {
@@ -92,8 +91,8 @@ fun GameScreen(
                         onNavigateToHistory()
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = rankingsForSelected.size == selectedPlayers.size &&
-                             familiesForSelected.size == selectedPlayers.size &&
+                    enabled = rankingsForSelected.size == 4 &&
+                             family1Count == 2 &&
                              selectedPlayers.size == 4
                 ) {
                     Text("计算并保存")
@@ -185,6 +184,37 @@ private fun PlayerSelectionSection(viewModel: GameViewModel, selectedPlayers: Li
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            // 确认选择提示（当选择4人时显示）
+            if (selectedCount == 4) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "已选择4人，请继续设置排名和家族",
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }
@@ -357,6 +387,14 @@ private fun FamilySection(viewModel: GameViewModel, selectedPlayers: List<Player
                             onCheckedChange = { checked ->
                                 if (checked && family1Count < 2) {
                                     viewModel.setPlayerFamily(player.id, "family1")
+                                    // 如果这是第2个家族1成员，自动将其他玩家设为家族2
+                                    if (family1Count + 1 == 2) {
+                                        selectedPlayers.forEach { p ->
+                                            if (p.id != player.id && settings.families[p.id] != "family1") {
+                                                viewModel.setPlayerFamily(p.id, "family2")
+                                            }
+                                        }
+                                    }
                                 } else if (!checked && isFamily1) {
                                     viewModel.setPlayerFamily(player.id, "family2")
                                 }

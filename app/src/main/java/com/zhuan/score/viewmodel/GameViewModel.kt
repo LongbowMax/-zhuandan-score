@@ -122,8 +122,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setPlayerRank(playerId: String, rank: GameRank) {
         val currentSettings = _currentRoundSettings.value
+        val selectedPlayers = getSelectedPlayers()
+        
+        // 设置当前玩家排名
         val newRankings = currentSettings.rankings.toMutableMap()
         newRankings[playerId] = rank
+        
+        // 如果已经设置了3个不同排名，自动为剩余玩家分配最后一个排名
+        val uniqueRanks = newRankings.values.toSet()
+        if (uniqueRanks.size == 3 && selectedPlayers.size == 4) {
+            val allRanks = GameRank.values().toSet()
+            val remainingRank = (allRanks - uniqueRanks).firstOrNull()
+            if (remainingRank != null) {
+                // 找到未设置排名的玩家
+                val unsetPlayer = selectedPlayers.find { !newRankings.containsKey(it.id) || newRankings[it.id] == null }
+                unsetPlayer?.let {
+                    newRankings[it.id] = remainingRank
+                }
+            }
+        }
+        
         _currentRoundSettings.value = currentSettings.copy(rankings = newRankings)
     }
 
